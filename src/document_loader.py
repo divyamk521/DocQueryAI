@@ -1,4 +1,4 @@
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import config
 
@@ -9,7 +9,7 @@ def load_pdf(file_path):
     """
     Load a pdf file and return a list of pages as LangChain documents.
     """
-    loader=PyPDFLoader(file_path)
+    loader=PyMuPDFLoader(file_path)
     pages=loader.load()
     return pages
 

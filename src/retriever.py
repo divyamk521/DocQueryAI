@@ -16,7 +16,7 @@ def get_retriever():
     embedding_model=get_embedding_model()
     store=get_vector_store(embedding_model)
     retriever=store.as_retriever(
-        search_type="similarity",
+        search_type="mmr",
         search_kwargs={"k": config.RETRIEVER_K}
     )
     
