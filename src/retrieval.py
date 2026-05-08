@@ -1,92 +1,46 @@
-from config import settings
+from llm import get_llm
+from prompt import get_prompt
+from retriever import get_retriever
+from chain import build_rag_chain
 
-from langchain_chroma import Chroma
+def run_retrieval():
 
-from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+    print("Initializing LLM and Retriever...")
 
-from langchain_groq import ChatGroq
+    llm = get_llm()
+    prompt = get_prompt()
+    retriever = get_retriever()
+    rag_chain = build_rag_chain(llm,
+                                 prompt,
+                                   retriever)
 
-from langchain_core.prompts import ChatPromptTemplate
+    print("\n--- Retrieval System Ready ---")
+    
+    while True:
 
-from langchain_classic.chains.combine_documents import (
-    create_stuff_documents_chain,
-)
+        question = input("You: ").strip()
 
-from langchain_classic.chains import create_retrieval_chain
-
-#loading embedding model for query
-embedding_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-
-print("Embedding model loaded successfully")
-
-#connecting embedding to chroma
-vector_store = Chroma(
-    persist_directory="chroma_db",
-    embedding_function=embedding_model
-)
-
-print("Connected to ChromaDB successfully")
-
-#create retriver
-retriever = vector_store.as_retriever(
-    search_kwargs={"k": 10}
-)
-
-print("Retriever created successfully")
-
-#initializing llm
-llm = ChatGroq(
-    groq_api_key=settings.GROQ_API_KEY,
-    model_name="openai/gpt-oss-120b"
-)
-
-print("LLM initialized successfully")
-
-#creating prompt template
-prompt = ChatPromptTemplate.from_template(
-    """
-Answer the question only using the provided context.
-
-<context>
-{context}
-</context>
-
-Question:
-{input}
-"""
-)
-
-print("Prompt template created successfully")
-
-#doc chain
-document_chain = create_stuff_documents_chain(
-    llm,
-    prompt
-)
-
-print("Document chain created successfully")
-
-#retrival chain
-retrieval_chain = create_retrieval_chain(
-    retriever,
-    document_chain
-)
-
-print("Retrieval chain created successfully")
-
-#user query
-query = input("whats the methodology ")
+        if question.lower() == "exit":
+            break
 
 
-#running retrival chain
-response = retrieval_chain.invoke({
-    "input": query
-})
+       
+        print(f"Searching for chunks related to: '{question}'...")
+
+        docs = retriever.invoke(question)
+
+        print(f"Found {len(docs)} matching chunks in PDF.")
+
+        
+        if docs :
+            print("\nTop Retrieved Chunk:\n")
+            print(docs[0].page_content[:300])
 
 
-#printing ans
-print("\nANSWER:\n")
+        response = rag_chain.invoke({
+            "input": question
+            })
+        print(f"\nAI Answer: {response['answer']}\n")
 
-print(response["answer"])
+if __name__ == "__main__":
+    run_retrieval()
