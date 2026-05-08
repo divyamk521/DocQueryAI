@@ -1,37 +1,54 @@
-from langchain_community.document_loaders import PyMuPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+import pymupdf4llm
+
+from langchain_text_splitters import (
+    RecursiveCharacterTextSplitter,
+)
+
 import config
 
-FILE_PATH=r"D:\DocQueryAI\data\Health.pdf"
+
+FILE_PATH = r"D:\DocQueryAI\data\Health.pdf"
 
 
 def load_pdf(file_path):
     """
-    Load a pdf file and return a list of pages as LangChain documents.
+    Convert PDF into markdown text.
     """
-    loader=PyMuPDFLoader(file_path)
-    pages=loader.load()
-    return pages
+
+    markdown_text = pymupdf4llm.to_markdown(file_path)
+
+    return markdown_text
 
 
+def split_into_chunks(markdown_text):
+    """
+    Split markdown into chunks.
+    """
 
-def split_into_chunks(documents):
-    """
-    Split documents into smaller overlapping chunks.
-    smaller chunks = better retrieval accuracy.
-    """
-    splitter=RecursiveCharacterTextSplitter(
+    splitter = RecursiveCharacterTextSplitter(
         chunk_size=config.CHUNK_SIZE,
-          chunk_overlap=config.CHUNK_OVERLAP
-          )
-    chunks=splitter.split_documents(documents)
+        chunk_overlap=config.CHUNK_OVERLAP,
+        separators=[
+            "\n\n",
+            "\n",
+            ". ",
+            " ",
+            ""
+        ]
+    )
+
+    chunks = splitter.create_documents([markdown_text])
+
     return chunks
 
 
 if __name__ == "__main__":
-    pdf_pages = load_pdf(FILE_PATH)
 
-    chunks = split_into_chunks(pdf_pages)
-    print(f"Pages Loaded: {len(pdf_pages)}")
+    markdown_text = load_pdf(FILE_PATH)
+
+    chunks = split_into_chunks(markdown_text)
+
     print(f"Chunks Created: {len(chunks)}")
- 
+
+    print("\nFIRST CHUNK:\n")
+    print(chunks[168].page_content)
